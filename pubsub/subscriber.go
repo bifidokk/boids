@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
 	"sync"
 )
 
@@ -15,7 +16,7 @@ type Subscriber struct {
 }
 
 func NewSubscriber() (string, *Subscriber) {
-	id := string(rand.Intn(1000000000))
+	id := strconv.Itoa(rand.Intn(1000000000))
 	return id, &Subscriber{
 		id:       id,
 		messages: make(chan *Message),
