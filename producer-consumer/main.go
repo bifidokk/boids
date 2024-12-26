@@ -72,29 +72,29 @@ func processOrders(producer *Producer, wg *sync.WaitGroup) {
 func createOrder(i int) *Order {
 	i++
 
-	if i > numberOfOrders {
-		return nil
+	if i <= numberOfOrders {
+		delay := rand.Intn(5) + 1
+		rnd := rand.Intn(12) + 1
+		fmt.Println("Created order", i)
+		success := true
+		message := fmt.Sprintf("Order #%d has been successfully processed", i)
+
+		if rnd <= 4 {
+			failedAmount++
+			success = false
+			message = fmt.Sprintf("Order #%d has been failed", i)
+		} else {
+			successAmount++
+		}
+
+		total++
+
+		time.Sleep(time.Duration(delay) * time.Second)
+
+		return &Order{i, message, success}
 	}
 
-	delay := rand.Intn(5) + 1
-	rnd := rand.Intn(12) + 1
-	fmt.Println("Created order", i)
-	success := true
-	message := fmt.Sprintf("Order #%d has been successfully processed", i)
-
-	if rnd <= 4 {
-		failedAmount++
-		success = false
-		message = fmt.Sprintf("Order #%d has been failed", i)
-	} else {
-		successAmount++
-	}
-
-	total++
-
-	time.Sleep(time.Duration(delay) * time.Second)
-
-	return &Order{i, message, success}
+	return &Order{orderNumber: i}
 }
 
 func (p *Producer) Close() {
