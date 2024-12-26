@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -26,7 +27,10 @@ func main() {
 
 	ordersJob := &Producer{make(chan Order), make(chan bool)}
 
-	go processOrders(ordersJob)
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go processOrders(ordersJob, &wg)
 
 	for i := range ordersJob.data {
 		if i.orderNumber <= numberOfOrders {
@@ -39,9 +43,13 @@ func main() {
 			ordersJob.Close()
 		}
 	}
+
+	wg.Wait()
 }
 
-func processOrders(producer *Producer) {
+func processOrders(producer *Producer, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	i := 0
 
 	for {
@@ -64,29 +72,29 @@ func processOrders(producer *Producer) {
 func createOrder(i int) *Order {
 	i++
 
-	if i <= numberOfOrders {
-		delay := rand.Intn(5) + 1
-		rnd := rand.Intn(12) + 1
-		fmt.Println("Created order", i)
-		success := true
-		message := fmt.Sprintf("Order #%d has been successfully processed", i)
-
-		if rnd <= 4 {
-			failedAmount++
-			success = false
-			message = fmt.Sprintf("Order #%d has been failed", i)
-		} else {
-			successAmount++
-		}
-
-		total++
-
-		time.Sleep(time.Duration(delay) * time.Second)
-
-		return &Order{i, message, success}
+	if i > numberOfOrders {
+		return nil
 	}
 
-	return &Order{orderNumber: i}
+	delay := rand.Intn(5) + 1
+	rnd := rand.Intn(12) + 1
+	fmt.Println("Created order", i)
+	success := true
+	message := fmt.Sprintf("Order #%d has been successfully processed", i)
+
+	if rnd <= 4 {
+		failedAmount++
+		success = false
+		message = fmt.Sprintf("Order #%d has been failed", i)
+	} else {
+		successAmount++
+	}
+
+	total++
+
+	time.Sleep(time.Duration(delay) * time.Second)
+
+	return &Order{i, message, success}
 }
 
 func (p *Producer) Close() {
