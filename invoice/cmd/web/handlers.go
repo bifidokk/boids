@@ -3,5 +3,5 @@ package main
 import "net/http"
 
 func (app *Config) HomePage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Welcome to the HomePage!"))
+	app.render(w, r, "home.page.gohtml", nil)
 }
