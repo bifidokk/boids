@@ -49,6 +49,9 @@ func main() {
 		Models:   data.New(db),
 	}
 
+	app.Mailer = app.createMailer()
+	go app.listenForEmail()
+
 	go app.listenForShutdown()
 
 	app.serve()
@@ -64,7 +67,7 @@ func (app *Config) serve() {
 	err := server.ListenAndServe()
 
 	if err != nil {
-		app.ErrorLog.Fatal(err)
+		panic(err)
 	}
 }
 
@@ -142,4 +145,9 @@ func (app *Config) shutdown() {
 	app.InfoLog.Println("Shutting down...")
 
 	app.Wait.Wait()
+
+	app.Mailer.DoneChannel <- true
+	close(app.Mailer.DoneChannel)
+	close(app.Mailer.ErrorChannel)
+	close(app.Mailer.MailerChannel)
 }

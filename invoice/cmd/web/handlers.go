@@ -28,7 +28,7 @@ func (app *Config) PostLogin(w http.ResponseWriter, r *http.Request) {
 	user, err := app.Models.User.GetByEmail(email)
 	if err != nil {
 		app.Session.Put(r.Context(), "error", "Invalid credentials")
-		http.Redirect(w, r, "/login", http.StatusUnauthorized)
+		http.Redirect(w, r, "/login", http.StatusFound)
 
 		return
 	}
@@ -36,8 +36,16 @@ func (app *Config) PostLogin(w http.ResponseWriter, r *http.Request) {
 	validPassword, err := user.PasswordMatches(password)
 
 	if err != nil || !validPassword {
+		msg := Message{
+			To:      email,
+			Subject: "Failed log in attempt",
+			Data:    "Failed log in attempt",
+		}
+
+		app.sendEmail(msg)
+
 		app.Session.Put(r.Context(), "error", "Invalid credentials")
-		http.Redirect(w, r, "/login", http.StatusUnauthorized)
+		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
 

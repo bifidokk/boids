@@ -36,7 +36,22 @@ type Message struct {
 	Template    string
 }
 
+func (app *Config) listenForEmail() {
+	for {
+		select {
+		case msg := <-app.Mailer.MailerChannel:
+			go app.Mailer.sendMail(msg, app.Mailer.ErrorChannel)
+		case err := <-app.Mailer.ErrorChannel:
+			app.ErrorLog.Println(err)
+		case <-app.Mailer.DoneChannel:
+			return
+		}
+	}
+}
+
 func (m *Mail) sendMail(msg Message, errorChannel chan error) {
+	defer m.Wait.Done()
+
 	if msg.Template == "" {
 		msg.Template = "mail"
 	}

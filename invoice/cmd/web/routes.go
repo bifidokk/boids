@@ -27,6 +27,7 @@ func (app *Config) routes() http.Handler {
 			FromAddress:  "info@example.com",
 			FromName:     "info",
 			ErrorChannel: make(chan error),
+			Wait:         app.Wait,
 		}
 
 		msg := Message{
@@ -35,6 +36,7 @@ func (app *Config) routes() http.Handler {
 			Data:    "Hello World!",
 		}
 
+		m.Wait.Add(1)
 		m.sendMail(msg, make(chan error))
 	})
 
