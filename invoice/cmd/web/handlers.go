@@ -57,7 +57,7 @@ func (app *Config) PostLogin(w http.ResponseWriter, r *http.Request) {
 	app.Session.Put(r.Context(), "user", user)
 	app.Session.Put(r.Context(), "flash", "Logged in")
 
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (app *Config) Logout(w http.ResponseWriter, r *http.Request) {
@@ -147,4 +147,27 @@ func (app *Config) ActivateAccount(w http.ResponseWriter, r *http.Request) {
 
 	app.Session.Put(r.Context(), "flash", "Account activated")
 	http.Redirect(w, r, "/login", http.StatusFound)
+}
+
+func (app *Config) PlansList(w http.ResponseWriter, r *http.Request) {
+	if !app.Session.Exists(r.Context(), "userID") {
+		app.Session.Put(r.Context(), "error", "Invalid session")
+		http.Redirect(w, r, "/login", http.StatusFound)
+
+		return
+	}
+
+	plans, err := app.Models.Plan.GetAll()
+	if err != nil {
+		app.ErrorLog.Println(err)
+		return
+	}
+
+	dataMap := map[string]any{
+		"plans": plans,
+	}
+
+	app.render(w, r, "plans.page.gohtml", &TemplateData{
+		Data: dataMap,
+	})
 }
