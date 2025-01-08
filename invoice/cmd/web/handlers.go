@@ -2,9 +2,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/phpdave11/gofpdf"
+	"github.com/phpdave11/gofpdf/contrib/gofpdi"
 	"html/template"
 	"invoice/data"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 func (app *Config) HomePage(w http.ResponseWriter, r *http.Request) {
@@ -170,4 +174,116 @@ func (app *Config) PlansList(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, "plans.page.gohtml", &TemplateData{
 		Data: dataMap,
 	})
+}
+
+func (app *Config) Subscribe(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.URL.Query().Get("id"))
+
+	plan, err := app.Models.Plan.GetOne(id)
+	if err != nil {
+		app.ErrorLog.Println(err)
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	user, ok := app.Session.Get(r.Context(), "user").(data.User)
+	if !ok {
+		app.ErrorLog.Println(err)
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	app.Wait.Add(1)
+
+	go func() {
+		defer app.Wait.Done()
+
+		invoice, err := app.getInvoice(user, plan)
+		if err != nil {
+			app.ErrorChan <- err
+			return
+		}
+
+		msg := Message{
+			To:       user.Email,
+			Subject:  "Invoice subscription",
+			Template: "invoice",
+			Data:     invoice,
+		}
+
+		app.sendEmail(msg)
+	}()
+
+	app.Wait.Add(1)
+
+	go func() {
+		defer app.Wait.Done()
+
+		pdf := app.generateManual(user, plan)
+		filename := fmt.Sprintf("./tmp/%d_manual.pdf", user.ID)
+
+		err := pdf.OutputFileAndClose(filename)
+		if err != nil {
+			app.ErrorChan <- err
+			return
+		}
+
+		msg := Message{
+			To:      user.Email,
+			Subject: "You manual",
+			Data:    "You manual is activated",
+			AttachmentMap: map[string]string{
+				"manual.pdf": filename,
+			},
+		}
+
+		app.sendEmail(msg)
+	}()
+
+	err = app.Models.Plan.SubscribeUserToPlan(user, *plan)
+	if err != nil {
+		app.ErrorChan <- err
+		http.Redirect(w, r, "/members/plans", http.StatusFound)
+		return
+	}
+
+	updatedUser, err := app.Models.User.GetOne(user.ID)
+	if err != nil {
+		app.ErrorChan <- err
+		http.Redirect(w, r, "/members/plans", http.StatusFound)
+		return
+	}
+
+	app.Session.Put(r.Context(), "user", updatedUser)
+
+	app.Session.Put(r.Context(), "flash", "Subscription activated")
+	http.Redirect(w, r, "/members/plans", http.StatusFound)
+}
+
+func (app *Config) getInvoice(user data.User, plan *data.Plan) (string, error) {
+	return plan.PlanAmountFormatted, nil
+}
+
+func (app *Config) generateManual(user data.User, plan *data.Plan) *gofpdf.Fpdf {
+	pdf := gofpdf.New("P", "mm", "Letter", "")
+	pdf.SetMargins(10, 13, 10)
+
+	importer := gofpdi.NewImporter()
+
+	time.Sleep(5 * time.Second)
+
+	templateId := importer.ImportPage(pdf, "./pdf/manual.pdf", 1, "/MediaBox")
+	pdf.AddPage()
+
+	importer.UseImportedTemplate(pdf, templateId, 0, 0, 215.9, 0)
+
+	pdf.SetX(75)
+	pdf.SetY(150)
+
+	pdf.SetFont("Arial", "", 12)
+	pdf.MultiCell(0, 4, fmt.Sprintf("%s %s", user.FirstName, user.LastName), "", "C", false)
+	pdf.Ln(5)
+	pdf.MultiCell(0, 4, fmt.Sprintf("%s User Guide", user.Email), "", "C", false)
+
+	return pdf
 }

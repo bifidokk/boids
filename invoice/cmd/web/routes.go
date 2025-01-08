@@ -18,7 +18,18 @@ func (app *Config) routes() http.Handler {
 	mux.Post("/register", app.PostRegister)
 	mux.Get("/activate", app.ActivateAccount)
 	mux.Get("/logout", app.Logout)
+
+	mux.Mount("/members", app.authRouter())
+
+	return mux
+}
+
+func (app *Config) authRouter() http.Handler {
+	mux := chi.NewRouter()
+	mux.Use(app.Auth)
+
 	mux.Get("/plans", app.PlansList)
+	mux.Get("/subscribe", app.Subscribe)
 
 	return mux
 }

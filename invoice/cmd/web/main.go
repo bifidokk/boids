@@ -41,17 +41,19 @@ func main() {
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	app := Config{
-		Session:  session,
-		DB:       db,
-		InfoLog:  infoLog,
-		ErrorLog: errorLog,
-		Wait:     wg,
-		Models:   data.New(db),
+		Session:       session,
+		DB:            db,
+		InfoLog:       infoLog,
+		ErrorLog:      errorLog,
+		Wait:          wg,
+		Models:        data.New(db),
+		ErrorChan:     make(chan error),
+		ErrorChanDone: make(chan bool),
 	}
 
 	app.Mailer = app.createMailer()
 	go app.listenForEmail()
-
+	go app.listenForErrors()
 	go app.listenForShutdown()
 
 	app.serve()
@@ -132,6 +134,17 @@ func initRedis() *redis.Pool {
 	return pool
 }
 
+func (app *Config) listenForErrors() {
+	for {
+		select {
+		case err := <-app.ErrorChan:
+			app.ErrorLog.Println(err)
+		case <-app.ErrorChanDone:
+			return
+		}
+	}
+}
+
 func (app *Config) listenForShutdown() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -147,7 +160,11 @@ func (app *Config) shutdown() {
 	app.Wait.Wait()
 
 	app.Mailer.DoneChannel <- true
+	app.ErrorChanDone <- true
+
 	close(app.Mailer.DoneChannel)
 	close(app.Mailer.ErrorChannel)
 	close(app.Mailer.MailerChannel)
+	close(app.ErrorChan)
+	close(app.ErrorChanDone)
 }
