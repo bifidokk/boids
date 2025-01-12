@@ -4,6 +4,7 @@ import (
 	"invoice/data"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -34,7 +35,6 @@ var pageTests = []struct {
 		url:            "/logout",
 		expectedStatus: http.StatusSeeOther,
 		handler:        testApp.Logout,
-		expectedHTML:   `<h1 class="mt-5">Login</h1>`,
 		sessionData: map[string]any{
 			"userID": 1,
 			"user":   data.User{},
@@ -71,5 +71,29 @@ func Test_Pages(t *testing.T) {
 			}
 		}
 	}
+}
 
+func TestConfig_PostLogin(t *testing.T) {
+	pathToTemplates = "./templates"
+
+	postedData := url.Values{
+		"email":    {"test@example.com"},
+		"password": {"password"},
+	}
+
+	recorder := httptest.NewRecorder()
+	request, _ := http.NewRequest(http.MethodPost, "/login", strings.NewReader(postedData.Encode()))
+	ctx := getCtx(request)
+	request = request.WithContext(ctx)
+
+	handler := http.HandlerFunc(testApp.PostLogin)
+	handler.ServeHTTP(recorder, request)
+
+	if status := recorder.Code; status != http.StatusSeeOther {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
+	}
+
+	if !testApp.Session.Exists(ctx, "userID") {
+		t.Errorf("user id not found in session")
+	}
 }

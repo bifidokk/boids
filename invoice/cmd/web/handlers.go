@@ -41,7 +41,7 @@ func (app *Config) PostLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validPassword, err := user.PasswordMatches(password)
+	validPassword, err := app.Models.User.PasswordMatches(password)
 
 	if err != nil || !validPassword {
 		msg := Message{

@@ -16,7 +16,7 @@ import (
 var testApp Config
 
 func TestMain(m *testing.M) {
-	gob.Register(data.User{})
+	gob.Register(data.UserTest{})
 
 	session := scs.New()
 	session.Lifetime = 24 * time.Hour
@@ -35,6 +35,7 @@ func TestMain(m *testing.M) {
 		Wait:          &sync.WaitGroup{},
 		ErrorChan:     make(chan error),
 		ErrorChanDone: make(chan bool),
+		Models:        data.TestNew(nil),
 	}
 
 	errorChan := make(chan error)
