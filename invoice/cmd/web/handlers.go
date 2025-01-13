@@ -11,6 +11,9 @@ import (
 	"time"
 )
 
+var pathToManual = "./pdf"
+var tmpPath = "./tmp"
+
 func (app *Config) HomePage(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, "home.page.gohtml", nil)
 }
@@ -220,7 +223,7 @@ func (app *Config) Subscribe(w http.ResponseWriter, r *http.Request) {
 		defer app.Wait.Done()
 
 		pdf := app.generateManual(user, plan)
-		filename := fmt.Sprintf("./tmp/%d_manual.pdf", user.ID)
+		filename := fmt.Sprintf("%s/%d_manual.pdf", tmpPath, user.ID)
 
 		err := pdf.OutputFileAndClose(filename)
 		if err != nil {
@@ -272,7 +275,7 @@ func (app *Config) generateManual(user data.User, plan *data.Plan) *gofpdf.Fpdf 
 
 	time.Sleep(5 * time.Second)
 
-	templateId := importer.ImportPage(pdf, "./pdf/manual.pdf", 1, "/MediaBox")
+	templateId := importer.ImportPage(pdf, fmt.Sprintf("%s/manual.pdf", pathToManual), 1, "/MediaBox")
 	pdf.AddPage()
 
 	importer.UseImportedTemplate(pdf, templateId, 0, 0, 215.9, 0)

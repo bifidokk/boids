@@ -18,6 +18,9 @@ var testApp Config
 func TestMain(m *testing.M) {
 	gob.Register(data.UserTest{})
 
+	tmpPath = "./../../tmp"
+	pathToManual = "./../../pdf"
+
 	session := scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Cookie.Persist = true
@@ -50,11 +53,14 @@ func TestMain(m *testing.M) {
 	}
 
 	go func() {
-		select {
-		case <-testApp.Mailer.MailerChannel:
-		case <-testApp.Mailer.ErrorChannel:
-		case <-testApp.Mailer.DoneChannel:
-			return
+		for {
+			select {
+			case <-testApp.Mailer.MailerChannel:
+				testApp.Wait.Done()
+			case <-testApp.Mailer.ErrorChannel:
+			case <-testApp.Mailer.DoneChannel:
+				return
+			}
 		}
 	}()
 
