@@ -42,3 +42,14 @@ func main() {
 		fmt.Fprintln(writer, result)
 	}
 }
+
+// Input
+//3 - number of test cases
+//9
+//0
+//9123
+
+// Output
+//0
+//0
+//923 - max value if one of digits removed
