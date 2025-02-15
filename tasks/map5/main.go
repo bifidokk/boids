@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -15,8 +16,8 @@ func main() {
 
 	for _, id := range userIds {
 		go func() {
+			time.Sleep(time.Millisecond * time.Duration(rand.Intn(1000)))
 			result := getOrCompute(id, func() string {
-				time.Sleep(time.Second * 1)
 				fmt.Println("Computation in progress")
 				return fmt.Sprintf("Computation for user %s", id)
 			})
