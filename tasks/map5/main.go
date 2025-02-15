@@ -1,0 +1,41 @@
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+var m = sync.Map{}
+
+func main() {
+	userIds := []string{"user1", "user2", "user3", "user4", "user2", "user1"}
+	wg := sync.WaitGroup{}
+	wg.Add(len(userIds))
+
+	for _, id := range userIds {
+		go func() {
+			result := getOrCompute(id, func() string {
+				time.Sleep(time.Second * 1)
+				fmt.Println("Computation in progress")
+				return fmt.Sprintf("Computation for user %s", id)
+			})
+
+			fmt.Println(result)
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+}
+
+func getOrCompute(key string, compute func() string) string {
+	v, ok := m.Load(key)
+
+	if !ok {
+		v = compute()
+		m.Store(key, v)
+	}
+
+	return v.(string)
+}
