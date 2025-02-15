@@ -19,7 +19,7 @@ func main() {
 			time.Sleep(time.Millisecond * time.Duration(rand.Intn(1000)))
 			result := getOrCompute(id, func() string {
 				fmt.Println("Computation in progress")
-				return fmt.Sprintf("Computation for user %s", id)
+				return fmt.Sprintf("Result for user %s", id)
 			})
 
 			fmt.Println(result)
