@@ -21,6 +21,6 @@ type Writer interface {
 func main() {
 	var userReader Reader = &User{}
 	userWriter := userReader.(Writer)
-	userWriter.Get() // can't call because made casting to Writer interface
+	//userWriter.Get() // can't call because made casting to Writer interface
 	_ = userWriter
 }
