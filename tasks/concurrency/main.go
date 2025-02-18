@@ -19,10 +19,12 @@ func SimulateRequest(ctx context.Context) (int64, error) {
 
 	requestResultChannel := make(chan int64)
 
+	// imitate a request
 	go func() {
 		time.Sleep(time.Duration(rand.Int63n(5)) * time.Second)
 		counter.Add(1)
 		requestResultChannel <- counter.Load()
+		close(requestResultChannel)
 	}()
 
 	select {
@@ -36,6 +38,7 @@ func SimulateRequest(ctx context.Context) (int64, error) {
 	}
 }
 
+// should make a request, ready to work concurrently and should have a timeout
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
