@@ -33,7 +33,7 @@ func merge(cs ...<-chan int) <-chan int {
 
 // fill channel with numbers 0, n-1
 func fillChan(n int) <-chan int {
-	c := make(chan int, n)
+	c := make(chan int)
 
 	go func() {
 		for i := 0; i < n; i++ {
