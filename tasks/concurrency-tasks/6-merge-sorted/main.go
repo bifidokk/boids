@@ -6,31 +6,26 @@ func mergeSorted(a, b <-chan int) chan int {
 	out := make(chan int)
 
 	go func() {
-		for {
-			ra, ok1 := <-a
-			rb, ok2 := <-b
-
-			if !ok1 && !ok2 {
-				break
-			}
-
+		ra, ok1 := <-a
+		rb, ok2 := <-b
+		for ok1 && ok2 {
 			if ra < rb {
-				if ok1 {
-					out <- ra
-				}
-
-				if ok2 {
-					out <- rb
-				}
+				out <- ra
+				ra, ok1 = <-a
 			} else {
-				if ok2 {
-					out <- rb
-				}
-
-				if ok1 {
-					out <- ra
-				}
+				out <- rb
+				rb, ok2 = <-b
 			}
+		}
+
+		for ok1 {
+			out <- ra
+			ra, ok1 = <-a
+		}
+
+		for ok2 {
+			out <- rb
+			rb, ok2 = <-b
 		}
 
 		close(out)
