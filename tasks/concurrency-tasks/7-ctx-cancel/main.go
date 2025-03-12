@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -51,24 +52,42 @@ func getFirstResult(ctx context.Context, replicas replicas) *result {
 	}
 }
 
-//func getResults(ctx context.Context, replicaKinds []replicas) []*result {
-//
-//}
+func getResults(ctx context.Context, replicaKinds []replicas) []*result {
+	c := make(chan *result)
+	wg := sync.WaitGroup{}
+
+	for _, rep := range replicaKinds {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			c <- getFirstResult(ctx, rep)
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(c)
+	}()
+
+	var resultSlice []*result
+
+	for r := range c {
+		resultSlice = append(resultSlice, r)
+	}
+
+	return resultSlice
+}
 
 func main() {
 	ctx, _ := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	rep := replicas{fakeSearch("web1"), fakeSearch("web2")}
 
-	m := getFirstResult(ctx, rep)
-	fmt.Println(m)
+	replicaKinds := []replicas{
+		replicas{fakeSearch("web1"), fakeSearch("web2")},
+		replicas{fakeSearch("image1"), fakeSearch("image2")},
+		replicas{fakeSearch("video1"), fakeSearch("video2")},
+	}
 
-	//replicaKinds := []replicas{
-	//	replicas{fakeSearch("web1"), fakeSearch("web2")},
-	//	replicas{fakeSearch("image1"), fakeSearch("image2")},
-	//	replicas{fakeSearch("video1"), fakeSearch("video2")},
-	//}
-	//
-	//for _, res := range getResults(ctx, replicaKinds) {
-	//	fmt.Println(res.msg, res.err)
-	//}
+	for _, res := range getResults(ctx, replicaKinds) {
+		fmt.Println(res.msg, res.err)
+	}
 }
