@@ -40,7 +40,7 @@ func tee(ctx context.Context, in <-chan interface{}) (_, _ <-chan interface{}) {
 	out2 := make(chan interface{})
 
 	go func() {
-		for v := range onDone(ctx, in) {
+		for v := range orDone(ctx, in) {
 			select {
 			case <-ctx.Done():
 				return
@@ -75,7 +75,7 @@ func tee(ctx context.Context, in <-chan interface{}) (_, _ <-chan interface{}) {
 	return out1, out2
 }
 
-func onDone(ctx context.Context, in <-chan interface{}) <-chan interface{} {
+func orDone(ctx context.Context, in <-chan interface{}) <-chan interface{} {
 	out := make(chan interface{})
 
 	go func() {
