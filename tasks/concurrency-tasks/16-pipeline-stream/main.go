@@ -6,7 +6,7 @@ func main() {
 
 	n := 10
 
-	last = inc(first)
+	last = inc(first) // run 10 times to increase 0 to 10
 	for i := 1; i < n; i++ {
 		last = inc(last)
 	}
@@ -24,7 +24,7 @@ func inc(in <-chan int) <-chan int {
 	go func() {
 		defer close(out)
 		for i := range in {
-			out <- (i + 1)
+			out <- i + 1
 		}
 	}()
 
