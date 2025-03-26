@@ -26,7 +26,7 @@ func main() {
 }
 
 func Run(fs ...fn) error {
-	ch := make(chan error, len(fs))
+	ch := make(chan error)
 	wg := sync.WaitGroup{}
 
 	for _, f := range fs {
